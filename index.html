@@ -2,29 +2,33 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大乐透号码选择器 (5+2)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>彩票号码选择器 - 大乐透 & 双色球</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Microsoft YaHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
             color: #333;
         }
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 960px;
+            margin: 15px auto;
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
             overflow: hidden;
         }
         header {
-            background: #e60012;
+            background: linear-gradient(to right, #e60012, #c0392b);
             color: white;
             text-align: center;
-            padding: 20px;
+            padding: 20px 15px;
         }
         h1 {
             margin: 0;
@@ -32,331 +36,458 @@
         }
         .subtitle {
             font-size: 16px;
-            opacity: 0.9;
-            margin-top: 5px;
+            margin-top: 6px;
+            opacity: 0.95;
         }
-        
+
+        /* Tab 切换 */
+        .tab-buttons {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 16px 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            background: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #e60012;
+            border-bottom: 5px solid #e60012;
+        }
+
+        .page {
+            display: none;
+            padding: 15px;
+        }
+        .page.active {
+            display: block;
+        }
+
         .section {
-            padding: 25px;
+            padding: 20px 15px;
+            margin-bottom: 10px;
         }
-        
         .red-area {
             background: #fff0f0;
-            border-left: 6px solid #e60012;
+            border-left: 8px solid #e60012;
+            border-radius: 8px;
         }
         .blue-area {
             background: #f0f8ff;
-            border-left: 6px solid #0066cc;
+            border-left: 8px solid #0066cc;
+            border-radius: 8px;
         }
-        
+
         h2 {
             margin: 0 0 15px 0;
-            color: #333;
+            font-size: 22px;
         }
         .red-title { color: #e60012; }
         .blue-title { color: #0066cc; }
-        
+
+        /* 号码网格 - 响应式核心 */
         .number-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
             gap: 10px;
+            justify-content: center;
         }
-        
+        @media (min-width: 600px) {
+            .number-grid {
+                grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+                gap: 12px;
+            }
+        }
+
         .number {
             width: 100%;
-            aspect-ratio: 1;
+            aspect-ratio: 1 / 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: bold;
             border-radius: 50%;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
+            border: 3px solid #ddd;
+            background: white;
             user-select: none;
-            border: 2px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        
-        .number:hover {
-            transform: scale(1.1);
+        .number:hover, .number:active {
+            transform: scale(1.15);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
         }
-        
-        .red-ball {
-            background: #fff;
-            color: #e60012;
-            border-color: #e60012;
-        }
-        
+
+        .red-ball { color: #e60012; border-color: #e60012; }
         .red-ball.selected {
             background: #e60012;
             color: white;
-            box-shadow: 0 4px 8px rgba(230, 0, 18, 0.4);
+            border-color: #e60012;
         }
-        
-        .blue-ball {
-            background: #fff;
-            color: #0066cc;
-            border-color: #0066cc;
-        }
-        
+        .blue-ball { color: #0066cc; border-color: #0066cc; }
         .blue-ball.selected {
             background: #0066cc;
             color: white;
-            box-shadow: 0 4px 8px rgba(0, 102, 204, 0.4);
+            border-color: #0066cc;
         }
-        
-        .selected-numbers {
-            margin: 20px 0;
-            padding: 15px;
+
+        .selected-area {
             background: #f8f9fa;
-            border-radius: 10px;
-            min-height: 60px;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+            min-height: 70px;
         }
-        
         .selected-display {
             font-size: 24px;
             font-weight: bold;
-            letter-spacing: 8px;
+            letter-spacing: 6px;
+            line-height: 1.6;
+            word-break: break-all;
         }
-        
+        @media (min-width: 600px) {
+            .selected-display {
+                font-size: 28px;
+                letter-spacing: 10px;
+            }
+        }
         .red-display { color: #e60012; }
         .blue-display { color: #0066cc; }
-        
+
         .btn-group {
             display: flex;
             gap: 15px;
-            margin-top: 20px;
+            justify-content: center;
             flex-wrap: wrap;
+            margin: 25px 0;
         }
-        
         button {
-            padding: 12px 24px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 14px 28px;
+            font-size: 17px;
             font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            min-width: 140px;
             transition: all 0.3s;
         }
-        
         .btn-random {
             background: #e60012;
             color: white;
         }
-        
-        .btn-random:hover {
+        .btn-random:hover, .btn-random:active {
             background: #c40010;
             transform: translateY(-2px);
         }
-        
         .btn-clear {
             background: #666;
             color: white;
         }
-        
-        .btn-clear:hover {
+        .btn-clear:hover, .btn-clear:active {
             background: #555;
         }
-        
-        .count {
-            font-size: 15px;
-            color: #666;
-            margin-top: 8px;
+
+        /* 底部切换按钮 */
+        .switch-area {
+            text-align: center;
+            padding: 25px 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
         }
-        
+        .switch-btn {
+            padding: 16px 40px;
+            font-size: 18px;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(52,152,219,0.4);
+            min-width: 260px;
+        }
+        .switch-btn:hover, .switch-btn:active {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(52,152,219,0.5);
+        }
+
         footer {
             text-align: center;
-            padding: 15px;
-            color: #999;
+            padding: 18px;
+            color: #888;
             font-size: 14px;
+        }
+
+        /* 小屏额外优化 */
+        @media (max-width: 480px) {
+            .number { font-size: 16px; }
+            .tab-btn { font-size: 16px; padding: 14px 8px; }
+            h1 { font-size: 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>大乐透号码选择器</h1>
-            <p class="subtitle">前区 01-35 选5个 + 后区 01-12 选2个</p >
-        </header>
-        
-        <div class="section red-area">
-            <h2 class="red-title">前区<span style="font-size:16px;">（已选 <span id="red-count">0</span>/5）</span></h2>
-            <div class="number-grid" id="red-grid"></div>
-        </div>
-        
-        <div class="section blue-area">
-            <h2 class="blue-title">后区<span style="font-size:16px;">（已选 <span id="blue-count">0</span>/2）</span></h2>
-            <div class="number-grid" id="blue-grid"></div>
-        </div>
-        
-        <div class="section">
-            <h2>已选号码</h2>
-            <div class="selected-numbers">
-                <div class="selected-display">
-                    <span id="selected-red" class="red-display"></span>
-                    <span id="selected-blue" class="blue-display"></span>
-                </div>
-            </div>
-            
-            <div class="btn-group">
-                <button class="btn-random" onclick="randomSelect()">随机生成一注</button>
-                <button class="btn-clear" onclick="clearAll()">清空所有选择</button>
-            </div>
-        </div>
-        
-        <footer>
-            大乐透号码选择工具 © 2026
-        </footer>
+
+<div class="container">
+    <header>
+        <h1>彩票号码选择器</h1>
+        <p class="subtitle">大乐透（5+2） & 双色球（6+1）</p>
+    </header>
+
+    <!-- Tab -->
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchPage(1)" id="tab1">大乐透 (5+2)</button>
+        <button class="tab-btn" onclick="switchPage(2)" id="tab2">双色球 (6+1)</button>
     </div>
 
-    <script>
-        let selectedRed = [];
-        let selectedBlue = [];
-        
-        // 创建前区号码（01-35）
-        function createRedBalls() {
-            const grid = document.getElementById('red-grid');
-            grid.innerHTML = '';
-            
-            for (let i = 1; i <= 35; i++) {
-                const num = i < 10 ? '0' + i : i;
-                const ball = document.createElement('div');
-                ball.className = 'number red-ball';
-                ball.textContent = num;
-                ball.dataset.value = i;
-                ball.onclick = () => toggleRed(i, ball);
-                grid.appendChild(ball);
-            }
-        }
-        
-        // 创建后区号码（01-12）
-        function createBlueBalls() {
-            const grid = document.getElementById('blue-grid');
-            grid.innerHTML = '';
-            
-            for (let i = 1; i <= 12; i++) {
-                const num = i < 10 ? '0' + i : i;
-                const ball = document.createElement('div');
-                ball.className = 'number blue-ball';
-                ball.textContent = num;
-                ball.dataset.value = i;
-                ball.onclick = () => toggleBlue(i, ball);
-                grid.appendChild(ball);
-            }
-        }
-        
-        function toggleRed(num, element) {
-            if (selectedRed.includes(num)) {
-                // 取消选择
-                selectedRed = selectedRed.filter(n => n !== num);
-                element.classList.remove('selected');
-            } else {
-                if (selectedRed.length >= 5) {
-                    alert('前区最多只能选择5个号码！');
-                    return;
-                }
-                selectedRed.push(num);
-                element.classList.add('selected');
-            }
-            updateDisplay();
-        }
-        
-        function toggleBlue(num, element) {
-            if (selectedBlue.includes(num)) {
-                // 取消选择
-                selectedBlue = selectedBlue.filter(n => n !== num);
-                element.classList.remove('selected');
-            } else {
-                if (selectedBlue.length >= 2) {
-                    alert('后区最多只能选择2个号码！');
-                    return;
-                }
-                selectedBlue.push(num);
-                element.classList.add('selected');
-            }
-            updateDisplay();
-        }
-        
-        function updateDisplay() {
-            // 更新计数
-            document.getElementById('red-count').textContent = selectedRed.length;
-            document.getElementById('blue-count').textContent = selectedBlue.length;
-            
-            // 排序并显示已选号码
-            const sortedRed = [...selectedRed].sort((a,b) => a - b);
-            const sortedBlue = [...selectedBlue].sort((a,b) => a - b);
-            
-            const redStr = sortedRed.map(n => n < 10 ? '0' + n : n).join('  ');
-            const blueStr = sortedBlue.map(n => n < 10 ? '0' + n : n).join('  ');
-            
-            document.getElementById('selected-red').textContent = redStr ? redStr + '  ' : '';
-            document.getElementById('selected-blue').textContent = blueStr;
-        }
-        
-        // 随机生成一注
-        function randomSelect() {
-            clearAll();
-            
-            // 随机选前区5个
-            const redPool = Array.from({length: 35}, (_, i) => i + 1);
-            selectedRed = [];
-            for (let i = 0; i < 5; i++) {
-                const randomIndex = Math.floor(Math.random() * redPool.length);
-                selectedRed.push(redPool[randomIndex]);
-                redPool.splice(randomIndex, 1);
-            }
-            
-            // 随机选后区2个
-            const bluePool = Array.from({length: 12}, (_, i) => i + 1);
-            selectedBlue = [];
-            for (let i = 0; i < 2; i++) {
-                const randomIndex = Math.floor(Math.random() * bluePool.length);
-                selectedBlue.push(bluePool[randomIndex]);
-                bluePool.splice(randomIndex, 1);
-            }
-            
-            // 高亮选中的球
-            highlightSelected();
-            updateDisplay();
-        }
-        
-        function highlightSelected() {
-            // 高亮红球
-            document.querySelectorAll('#red-grid .number').forEach(ball => {
-                const value = parseInt(ball.dataset.value);
-                if (selectedRed.includes(value)) {
-                    ball.classList.add('selected');
-                } else {
-                    ball.classList.remove('selected');
-                }
-            });
-            
-            // 高亮蓝球
-            document.querySelectorAll('#blue-grid .number').forEach(ball => {
-                const value = parseInt(ball.dataset.value);
-                if (selectedBlue.includes(value)) {
-                    ball.classList.add('selected');
-                } else {
-                    ball.classList.remove('selected');
-                }
-            });
-        }
-        
-        function clearAll() {
-            selectedRed = [];
-            selectedBlue = [];
-            document.querySelectorAll('.number').forEach(ball => {
-                ball.classList.remove('selected');
-            });
-            updateDisplay();
-        }
-        
-        // 初始化
-        window.onload = function() {
-            createRedBalls();
-            createBlueBalls();
-            updateDisplay();
-        };
-    </script>
+    <!-- 大乐透页面 -->
+    <div id="page1" class="page active">
+        <div class="section red-area">
+            <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count1">0</span>/5）</span></h2>
+            <div class="number-grid" id="red-grid1"></div>
+        </div>
+
+        <div class="section blue-area">
+            <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count1">0</span>/2）</span></h2>
+            <div class="number-grid" id="blue-grid1"></div>
+        </div>
+
+        <div class="section">
+            <h2>已选号码</h2>
+            <div class="selected-area">
+                <div class="selected-display">
+                    <span id="selected-red1" class="red-display"></span>
+                    <span id="selected-blue1" class="blue-display"></span>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-random" onclick="randomSelect1()">🎲 随机生成一注</button>
+                <button class="btn-clear" onclick="clearAll1()">清空选择</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 双色球页面 -->
+    <div id="page2" class="page">
+        <div class="section red-area">
+            <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count2">0</span>/6）</span></h2>
+            <div class="number-grid" id="red-grid2"></div>
+        </div>
+
+        <div class="section blue-area">
+            <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count2">0</span>/1）</span></h2>
+            <div class="number-grid" id="blue-grid2"></div>
+        </div>
+
+        <div class="section">
+            <h2>已选号码</h2>
+            <div class="selected-area">
+                <div class="selected-display">
+                    <span id="selected-red2" class="red-display"></span>
+                    <span id="selected-blue2" class="blue-display"></span>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-random" onclick="randomSelect2()">🎲 随机生成一注</button>
+                <button class="btn-clear" onclick="clearAll2()">清空选择</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="switch-area">
+        <button class="switch-btn" onclick="switchPage(2)" id="switchBtn">
+            切换到双色球 →
+        </button>
+    </div>
+
+    <footer>
+        彩票号码选择工具 © 2026
+    </footer>
+</div>
+
+<script>
+// 大乐透相关代码（与之前相同，仅调整了ID）
+let selectedRed1 = [], selectedBlue1 = [];
+function createRedBalls1() {
+    const grid = document.getElementById('red-grid1'); grid.innerHTML = '';
+    for (let i = 1; i <= 35; i++) {
+        const num = i < 10 ? '0' + i : i;
+        const ball = document.createElement('div');
+        ball.className = 'number red-ball';
+        ball.textContent = num;
+        ball.dataset.value = i;
+        ball.onclick = () => toggleRed1(i, ball);
+        grid.appendChild(ball);
+    }
+}
+function createBlueBalls1() {
+    const grid = document.getElementById('blue-grid1'); grid.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+        const num = i < 10 ? '0' + i : i;
+        const ball = document.createElement('div');
+        ball.className = 'number blue-ball';
+        ball.textContent = num;
+        ball.dataset.value = i;
+        ball.onclick = () => toggleBlue1(i, ball);
+        grid.appendChild(ball);
+    }
+}
+function toggleRed1(num, el) {
+    if (selectedRed1.includes(num)) {
+        selectedRed1 = selectedRed1.filter(n => n !== num);
+        el.classList.remove('selected');
+    } else {
+        if (selectedRed1.length >= 5) { alert('前区最多选5个！'); return; }
+        selectedRed1.push(num);
+        el.classList.add('selected');
+    }
+    updateDisplay1();
+}
+function toggleBlue1(num, el) {
+    if (selectedBlue1.includes(num)) {
+        selectedBlue1 = selectedBlue1.filter(n => n !== num);
+        el.classList.remove('selected');
+    } else {
+        if (selectedBlue1.length >= 2) { alert('后区最多选2个！'); return; }
+        selectedBlue1.push(num);
+        el.classList.add('selected');
+    }
+    updateDisplay1();
+}
+function updateDisplay1() {
+    document.getElementById('red-count1').textContent = selectedRed1.length;
+    document.getElementById('blue-count1').textContent = selectedBlue1.length;
+    const r = [...selectedRed1].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
+    const b = [...selectedBlue1].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
+    document.getElementById('selected-red1').textContent = r ? r + '　' : '';
+    document.getElementById('selected-blue1').textContent = b;
+}
+function randomSelect1() {
+    clearAll1();
+    let pool = Array.from({length:35},(_,i)=>i+1);
+    selectedRed1 = [];
+    for(let i=0;i<5;i++){ let idx=Math.floor(Math.random()*pool.length); selectedRed1.push(pool[idx]); pool.splice(idx,1); }
+    pool = Array.from({length:12},(_,i)=>i+1);
+    selectedBlue1 = [];
+    for(let i=0;i<2;i++){ let idx=Math.floor(Math.random()*pool.length); selectedBlue1.push(pool[idx]); pool.splice(idx,1); }
+    highlight1();
+    updateDisplay1();
+}
+function highlight1() {
+    document.querySelectorAll('#red-grid1 .number').forEach(b=> b.classList.toggle('selected', selectedRed1.includes(+b.dataset.value)));
+    document.querySelectorAll('#blue-grid1 .number').forEach(b=> b.classList.toggle('selected', selectedBlue1.includes(+b.dataset.value)));
+}
+function clearAll1() {
+    selectedRed1=[]; selectedBlue1=[];
+    document.querySelectorAll('#page1 .number').forEach(b=>b.classList.remove('selected'));
+    updateDisplay1();
+}
+
+// 双色球相关代码
+let selectedRed2 = [], selectedBlue2 = [];
+function createRedBalls2() {
+    const grid = document.getElementById('red-grid2'); grid.innerHTML = '';
+    for (let i = 1; i <= 33; i++) {
+        const num = i < 10 ? '0' + i : i;
+        const ball = document.createElement('div');
+        ball.className = 'number red-ball';
+        ball.textContent = num;
+        ball.dataset.value = i;
+        ball.onclick = () => toggleRed2(i, ball);
+        grid.appendChild(ball);
+    }
+}
+function createBlueBalls2() {
+    const grid = document.getElementById('blue-grid2'); grid.innerHTML = '';
+    for (let i = 1; i <= 16; i++) {
+        const num = i < 10 ? '0' + i : i;
+        const ball = document.createElement('div');
+        ball.className = 'number blue-ball';
+        ball.textContent = num;
+        ball.dataset.value = i;
+        ball.onclick = () => toggleBlue2(i, ball);
+        grid.appendChild(ball);
+    }
+}
+function toggleRed2(num, el) {
+    if (selectedRed2.includes(num)) {
+        selectedRed2 = selectedRed2.filter(n => n !== num);
+        el.classList.remove('selected');
+    } else {
+        if (selectedRed2.length >= 6) { alert('前区最多选6个！'); return; }
+        selectedRed2.push(num);
+        el.classList.add('selected');
+    }
+    updateDisplay2();
+}
+function toggleBlue2(num, el) {
+    document.querySelectorAll('#blue-grid2 .number').forEach(b => b.classList.remove('selected'));
+    if (selectedBlue2[0] === num) {
+        selectedBlue2 = [];
+    } else {
+        selectedBlue2 = [num];
+        el.classList.add('selected');
+    }
+    updateDisplay2();
+}
+function updateDisplay2() {
+    document.getElementById('red-count2').textContent = selectedRed2.length;
+    document.getElementById('blue-count2').textContent = selectedBlue2.length;
+    const r = [...selectedRed2].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
+    const b = selectedBlue2.length ? (selectedBlue2[0]<10?'0'+selectedBlue2[0]:selectedBlue2[0]) : '';
+    document.getElementById('selected-red2').textContent = r ? r + '　' : '';
+    document.getElementById('selected-blue2').textContent = b;
+}
+function randomSelect2() {
+    clearAll2();
+    let pool = Array.from({length:33},(_,i)=>i+1);
+    selectedRed2 = [];
+    for(let i=0;i<6;i++){ let idx=Math.floor(Math.random()*pool.length); selectedRed2.push(pool[idx]); pool.splice(idx,1); }
+    selectedBlue2 = [Math.floor(Math.random()*16)+1];
+    highlight2();
+    updateDisplay2();
+}
+function highlight2() {
+    document.querySelectorAll('#red-grid2 .number').forEach(b=> b.classList.toggle('selected', selectedRed2.includes(+b.dataset.value)));
+    document.querySelectorAll('#blue-grid2 .number').forEach(b=> b.classList.toggle('selected', selectedBlue2.includes(+b.dataset.value)));
+}
+function clearAll2() {
+    selectedRed2=[]; selectedBlue2=[];
+    document.querySelectorAll('#page2 .number').forEach(b=>b.classList.remove('selected'));
+    updateDisplay2();
+}
+
+// Tab 切换
+function switchPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page'+page).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tab'+page).classList.add('active');
+
+    const btn = document.getElementById('switchBtn');
+    if (page === 1) {
+        btn.textContent = "切换到双色球 →";
+        btn.onclick = () => switchPage(2);
+    } else {
+        btn.textContent = "切换到大乐透 ←";
+        btn.onclick = () => switchPage(1);
+    }
+}
+
+// 初始化
+window.onload = function() {
+    createRedBalls1(); createBlueBalls1(); updateDisplay1();
+    createRedBalls2(); createBlueBalls2(); updateDisplay2();
+};
+</script>
 </body>
 </html>
