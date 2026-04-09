@@ -3,491 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>彩票号码选择器 - 大乐透 & 双色球</title>
+    <title>彩票号码选择器</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Microsoft YaHei', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background: linear-gradient(135deg, #667eea, #764ba2);
-            min-height: 100vh;
-            color: #333;
+            min-height: 100vh; color: #333;
         }
-        .container {
-            max-width: 960px;
-            margin: 15px auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
-            overflow: hidden;
+
+        #password-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; transition: opacity 0.8s ease;
         }
-        header {
+        .password-box {
+            background: white; padding: 45px 35px; border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35); text-align: center;
+            max-width: 380px; width: 92%;
+        }
+        .password-box h2 { margin: 0 0 30px 0; color: #e60012; font-size: 28px; }
+        .password-input {
+            width: 100%; padding: 16px; font-size: 18px;
+            border: 3px solid #ddd; border-radius: 14px;
+            margin-bottom: 20px; outline: none; transition: all 0.3s;
+        }
+        .password-input:focus { border-color: #e60012; box-shadow: 0 0 0 4px rgba(230, 0, 18, 0.2); }
+        .btn-login {
+            width: 100%; padding: 16px; font-size: 18px; font-weight: bold;
             background: linear-gradient(to right, #e60012, #c0392b);
-            color: white;
-            text-align: center;
-            padding: 20px 15px;
+            color: white; border: none; border-radius: 14px;
+            cursor: pointer; transition: all 0.3s;
         }
-        h1 {
-            margin: 0;
-            font-size: 28px;
-        }
-        .subtitle {
-            font-size: 16px;
-            margin-top: 6px;
-            opacity: 0.95;
-        }
+        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(230,0,18,0.4); }
+        .error-msg { color: #e60012; margin-top: 12px; font-size: 15px; min-height: 24px; }
 
-        /* Tab 切换 */
-        .tab-buttons {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #ddd;
+        #main-content { display: none; }
+
+        .container {
+            max-width: 960px; margin: 15px auto;
+            background: white; border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden;
         }
+        header { background: linear-gradient(to right, #e60012, #c0392b); color: white; text-align: center; padding: 20px 15px; }
+        h1 { margin: 0; font-size: 28px; }
+        .subtitle { font-size: 16px; margin-top: 6px; opacity: 0.95; }
+
+        .tab-buttons { display: flex; background: #f8f9fa; border-bottom: 1px solid #ddd; }
         .tab-btn {
-            flex: 1;
-            padding: 16px 10px;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            background: none;
-            cursor: pointer;
-            transition: all 0.3s;
+            flex: 1; padding: 16px 10px; font-size: 18px; font-weight: bold;
+            border: none; background: none; cursor: pointer; transition: all 0.3s;
         }
-        .tab-btn.active {
-            background: white;
-            color: #e60012;
-            border-bottom: 5px solid #e60012;
-        }
+        .tab-btn.active { background: white; color: #e60012; border-bottom: 5px solid #e60012; }
 
-        .page {
-            display: none;
-            padding: 15px;
-        }
-        .page.active {
-            display: block;
-        }
+        .page { display: none; padding: 15px; }
+        .page.active { display: block; }
 
-        .section {
-            padding: 20px 15px;
-            margin-bottom: 10px;
-        }
-        .red-area {
-            background: #fff0f0;
-            border-left: 8px solid #e60012;
-            border-radius: 8px;
-        }
-        .blue-area {
-            background: #f0f8ff;
-            border-left: 8px solid #0066cc;
-            border-radius: 8px;
-        }
+        .section { padding: 20px 15px; margin-bottom: 10px; }
+        .red-area { background: #fff0f0; border-left: 8px solid #e60012; border-radius: 8px; }
+        .blue-area { background: #f0f8ff; border-left: 8px solid #0066cc; border-radius: 8px; }
 
-        h2 {
-            margin: 0 0 15px 0;
-            font-size: 22px;
-        }
-        .red-title { color: #e60012; }
-        .blue-title { color: #0066cc; }
+        h2 { margin: 0 0 15px 0; font-size: 22px; }
+        .red-title { color: #e60012; } .blue-title { color: #0066cc; }
 
-        /* 号码网格 - 响应式核心 */
         .number-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
-            gap: 10px;
-            justify-content: center;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+            gap: 10px; justify-content: center;
         }
         @media (min-width: 600px) {
-            .number-grid {
-                grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
-                gap: 12px;
-            }
+            .number-grid { grid-template-columns: repeat(auto-fit, minmax(55px, 1fr)); gap: 12px; }
         }
 
         .number {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 17px;
-            font-weight: bold;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            border: 3px solid #ddd;
-            background: white;
-            user-select: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            width: 100%; aspect-ratio: 1 / 1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px; font-weight: bold; border-radius: 50%;
+            cursor: pointer; transition: all 0.25s ease;
+            border: 3px solid #ddd; background: white;
+            user-select: none; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
         }
-        .number:hover, .number:active {
-            transform: scale(1.15);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-        }
+        .number:hover, .number:active { transform: scale(1.15); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
 
         .red-ball { color: #e60012; border-color: #e60012; }
-        .red-ball.selected {
-            background: #e60012;
-            color: white;
-            border-color: #e60012;
-        }
+        .red-ball.selected { background: #e60012; color: white; border-color: #e60012; }
         .blue-ball { color: #0066cc; border-color: #0066cc; }
-        .blue-ball.selected {
-            background: #0066cc;
-            color: white;
-            border-color: #0066cc;
-        }
+        .blue-ball.selected { background: #0066cc; color: white; border-color: #0066cc; }
 
         .selected-area {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-            min-height: 70px;
+            background: #f8f9fa; padding: 20px; border-radius: 12px;
+            margin: 20px 0; text-align: center; min-height: 80px;
         }
         .selected-display {
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 6px;
-            line-height: 1.6;
-            word-break: break-all;
+            font-size: 24px; font-weight: bold; letter-spacing: 8px;
+            line-height: 1.7; word-break: break-all;
         }
         @media (min-width: 600px) {
-            .selected-display {
-                font-size: 28px;
-                letter-spacing: 10px;
-            }
+            .selected-display { font-size: 28px; letter-spacing: 12px; }
         }
-        .red-display { color: #e60012; }
-        .blue-display { color: #0066cc; }
+        .red-display { color: #e60012; } .blue-display { color: #0066cc; }
 
         .btn-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin: 25px 0;
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 25px 0;
         }
         button {
-            padding: 14px 28px;
-            font-size: 17px;
-            font-weight: bold;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            min-width: 140px;
-            transition: all 0.3s;
+            padding: 14px 22px; font-size: 16px; font-weight: bold;
+            border: none; border-radius: 12px; cursor: pointer;
+            min-width: 135px; transition: all 0.3s;
         }
-        .btn-random {
-            background: #e60012;
-            color: white;
+        .btn-random { background: #e60012; color: white; }
+        .btn-random:hover { background: #c40010; transform: translateY(-2px); }
+        .btn-predict {
+            background: linear-gradient(to right, #00b894, #00a085); color: white;
         }
-        .btn-random:hover, .btn-random:active {
-            background: #c40010;
-            transform: translateY(-2px);
-        }
-        .btn-clear {
-            background: #666;
-            color: white;
-        }
-        .btn-clear:hover, .btn-clear:active {
-            background: #555;
-        }
+        .btn-predict:hover { background: linear-gradient(to right, #00a085, #00876e); transform: translateY(-2px); }
+        .btn-predict:disabled { background: #999; cursor: not-allowed; }
+        .btn-refresh { background: #3498db; color: white; }
+        .btn-refresh:hover { background: #2980b9; transform: translateY(-2px); }
+        .btn-clear { background: #666; color: white; }
+        .btn-clear:hover { background: #555; }
 
-        /* 底部切换按钮 */
-        .switch-area {
-            text-align: center;
-            padding: 25px 15px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-        }
+        .predict-info { font-size: 14px; color: #666; text-align: center; margin: 8px 0 15px; font-style: italic; }
+        .status { text-align: center; font-size: 14px; color: #0066cc; margin-top: 5px; font-weight: bold; }
+
+        .switch-area { text-align: center; padding: 25px 15px; background: #f8f9fa; border-top: 1px solid #eee; }
         .switch-btn {
-            padding: 16px 40px;
-            font-size: 18px;
-            background: linear-gradient(to right, #3498db, #2980b9);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 6px 15px rgba(52,152,219,0.4);
-            min-width: 260px;
+            padding: 16px 40px; font-size: 18px;
+            background: linear-gradient(to right, #3498db, #2980b9); color: white;
+            border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 6px 15px rgba(52,152,219,0.4); min-width: 260px;
         }
-        .switch-btn:hover, .switch-btn:active {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(52,152,219,0.5);
-        }
+        .switch-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(52,152,219,0.5); }
 
-        footer {
-            text-align: center;
-            padding: 18px;
-            color: #888;
-            font-size: 14px;
-        }
-
-        /* 小屏额外优化 */
-        @media (max-width: 480px) {
-            .number { font-size: 16px; }
-            .tab-btn { font-size: 16px; padding: 14px 8px; }
-            h1 { font-size: 24px; }
-        }
+        footer { text-align: center; padding: 18px; color: #888; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h1>彩票号码选择器</h1>
-        <p class="subtitle">大乐透（5+2） & 双色球（6+1）</p>
-    </header>
-
-    <!-- Tab -->
-    <div class="tab-buttons">
-        <button class="tab-btn active" onclick="switchPage(1)" id="tab1">大乐透 (5+2)</button>
-        <button class="tab-btn" onclick="switchPage(2)" id="tab2">双色球 (6+1)</button>
+<div id="password-screen">
+    <div class="password-box">
+        <h2>🔒 彩票号码选择器</h2>
+        <input type="password" id="password-input" class="password-input" placeholder="请输入密码" autocomplete="off">
+        <button class="btn-login" onclick="checkPassword()">进入系统</button>
+        <div id="error-msg" class="error-msg"></div>
     </div>
+</div>
 
-    <!-- 大乐透页面 -->
-    <div id="page1" class="page active">
-        <div class="section red-area">
-            <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count1">0</span>/5）</span></h2>
-            <div class="number-grid" id="red-grid1"></div>
+<div id="main-content">
+    <div class="container">
+        <header>
+            <h1>彩票号码选择器</h1>
+            <p class="subtitle">大乐透（5+2） & 双色球（6+1）</p>
+        </header>
+
+        <div class="tab-buttons">
+            <button class="tab-btn active" onclick="switchPage(1)" id="tab1">大乐透 (5+2)</button>
+            <button class="tab-btn" onclick="switchPage(2)" id="tab2">双色球 (6+1)</button>
         </div>
 
-        <div class="section blue-area">
-            <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count1">0</span>/2）</span></h2>
-            <div class="number-grid" id="blue-grid1"></div>
-        </div>
-
-        <div class="section">
-            <h2>已选号码</h2>
-            <div class="selected-area">
-                <div class="selected-display">
-                    <span id="selected-red1" class="red-display"></span>
-                    <span id="selected-blue1" class="blue-display"></span>
+        <div id="page1" class="page active">
+            <div class="section red-area">
+                <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count1">0</span>/5）</span></h2>
+                <div class="number-grid" id="red-grid1"></div>
+            </div>
+            <div class="section blue-area">
+                <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count1">0</span>/2）</span></h2>
+                <div class="number-grid" id="blue-grid1"></div>
+            </div>
+            <div class="section">
+                <h2>已选号码</h2>
+                <div class="selected-area">
+                    <div class="selected-display">
+                        <span id="selected-red1" class="red-display"></span>
+                        <span id="selected-blue1" class="blue-display"></span>
+                    </div>
                 </div>
-            </div>
-            <div class="btn-group">
-                <button class="btn-random" onclick="randomSelect1()">🎲 随机生成一注</button>
-                <button class="btn-clear" onclick="clearAll1()">清空选择</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 双色球页面 -->
-    <div id="page2" class="page">
-        <div class="section red-area">
-            <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count2">0</span>/6）</span></h2>
-            <div class="number-grid" id="red-grid2"></div>
-        </div>
-
-        <div class="section blue-area">
-            <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count2">0</span>/1）</span></h2>
-            <div class="number-grid" id="blue-grid2"></div>
-        </div>
-
-        <div class="section">
-            <h2>已选号码</h2>
-            <div class="selected-area">
-                <div class="selected-display">
-                    <span id="selected-red2" class="red-display"></span>
-                    <span id="selected-blue2" class="blue-display"></span>
+                <div class="btn-group">
+                    <button class="btn-random" onclick="randomSelect1()">🎲 随机生成一注</button>
+                    <button class="btn-predict" id="predictBtn1" onclick="predictSelect1()">📊 分析最近37期预测</button>
+                    <button class="btn-refresh" onclick="refreshData1()">🔄 刷新数据</button>
+                    <button class="btn-clear" onclick="clearAll1()">清空选择</button>
                 </div>
-            </div>
-            <div class="btn-group">
-                <button class="btn-random" onclick="randomSelect2()">🎲 随机生成一注</button>
-                <button class="btn-clear" onclick="clearAll2()">清空选择</button>
+                <p class="predict-info">基于实时最新37期开奖结果热号频率分析</p>
+                <div id="status1" class="status"></div>
             </div>
         </div>
-    </div>
 
-    <div class="switch-area">
-        <button class="switch-btn" onclick="switchPage(2)" id="switchBtn">
-            切换到双色球 →
-        </button>
-    </div>
+        <div id="page2" class="page">
+            <div class="section red-area">
+                <h2 class="red-title">前区（红球） <span style="font-size:15px;">（已选 <span id="red-count2">0</span>/6）</span></h2>
+                <div class="number-grid" id="red-grid2"></div>
+            </div>
+            <div class="section blue-area">
+                <h2 class="blue-title">后区（蓝球） <span style="font-size:15px;">（已选 <span id="blue-count2">0</span>/1）</span></h2>
+                <div class="number-grid" id="blue-grid2"></div>
+            </div>
+            <div class="section">
+                <h2>已选号码</h2>
+                <div class="selected-area">
+                    <div class="selected-display">
+                        <span id="selected-red2" class="red-display"></span>
+                        <span id="selected-blue2" class="blue-display"></span>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-random" onclick="randomSelect2()">🎲 随机生成一注</button>
+                    <button class="btn-predict" id="predictBtn2" onclick="predictSelect2()">📊 分析最近37期预测</button>
+                    <button class="btn-refresh" onclick="refreshData2()">🔄 刷新数据</button>
+                    <button class="btn-clear" onclick="clearAll2()">清空选择</button>
+                </div>
+                <p class="predict-info">基于实时最新37期开奖结果热号频率分析</p>
+                <div id="status2" class="status"></div>
+            </div>
+        </div>
 
-    <footer>
-        彩票号码选择工具 © 2026
-    </footer>
+        <div class="switch-area">
+            <button class="switch-btn" onclick="switchPage(2)" id="switchBtn">切换到双色球 →</button>
+        </div>
+
+        <footer>彩票号码选择工具 © 2026 | 实时37期官方数据</footer>
+    </div>
 </div>
 
 <script>
-// 大乐透相关代码（与之前相同，仅调整了ID）
+const correctPassword = "123456";
+
+// 这里是实时从后端获取的最新37期数据！
+let dltHistory = [];
+let ssqHistory = [];
+
+async function loadRealData() {
+    try {
+        let dltRes = await fetch('http://127.0.0.1:8000/api/dlt');
+        dltHistory = await dltRes.json();
+
+        let ssqRes = await fetch('http://127.0.0.1:8000/api/ssq');
+        ssqHistory = await ssqRes.json();
+    } catch (e) {
+        alert("获取实时数据失败，请确保Python后端已启动！");
+    }
+}
+
+function checkPassword() {
+    const input = document.getElementById('password-input').value.trim();
+    const errorMsg = document.getElementById('error-msg');
+    if (input === correctPassword) {
+        document.getElementById('password-screen').style.opacity = '0';
+        setTimeout(async () => {
+            document.getElementById('password-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            await loadRealData();
+            initLottery();
+        }, 700);
+    } else {
+        errorMsg.textContent = '密码错误！';
+        document.getElementById('password-input').value = '';
+        setTimeout(() => errorMsg.textContent = '', 2000);
+    }
+}
+
+function analyzeAndPredict(history, isSSQ) {
+    const maxRed = isSSQ ? 33 : 35;
+    const maxBlue = isSSQ ? 16 : 12;
+    const needRed = isSSQ ? 6 : 5;
+    const needBlue = isSSQ ? 1 : 2;
+
+    const redFreq = new Array(maxRed + 1).fill(0);
+    const blueFreq = new Array(maxBlue + 1).fill(0);
+
+    history.forEach(draw => {
+        draw.red.forEach(num => { if (num >= 1 && num <= maxRed) redFreq[num]++; });
+        const blues = Array.isArray(draw.blue) ? draw.blue : [draw.blue];
+        blues.forEach(num => { if (num >= 1 && num <= maxBlue) blueFreq[num]++; });
+    });
+
+    let redCandidates = Array.from({length: maxRed}, (_, i) => ({num: i+1, freq: redFreq[i+1]}));
+    redCandidates.sort((a, b) => b.freq - a.freq || a.num - b.num);
+    let predictedRed = redCandidates.slice(0, needRed).map(c => c.num).sort((a,b) => a - b);
+
+    let blueCandidates = Array.from({length: maxBlue}, (_, i) => ({num: i+1, freq: blueFreq[i+1]}));
+    blueCandidates.sort((a, b) => b.freq - a.freq || a.num - b.num);
+    let predictedBlue = blueCandidates.slice(0, needBlue).map(c => c.num).sort((a,b) => a - b);
+
+    return { red: predictedRed, blue: predictedBlue };
+}
+
 let selectedRed1 = [], selectedBlue1 = [];
-function createRedBalls1() {
-    const grid = document.getElementById('red-grid1'); grid.innerHTML = '';
-    for (let i = 1; i <= 35; i++) {
-        const num = i < 10 ? '0' + i : i;
-        const ball = document.createElement('div');
-        ball.className = 'number red-ball';
-        ball.textContent = num;
-        ball.dataset.value = i;
-        ball.onclick = () => toggleRed1(i, ball);
-        grid.appendChild(ball);
-    }
-}
-function createBlueBalls1() {
-    const grid = document.getElementById('blue-grid1'); grid.innerHTML = '';
-    for (let i = 1; i <= 12; i++) {
-        const num = i < 10 ? '0' + i : i;
-        const ball = document.createElement('div');
-        ball.className = 'number blue-ball';
-        ball.textContent = num;
-        ball.dataset.value = i;
-        ball.onclick = () => toggleBlue1(i, ball);
-        grid.appendChild(ball);
-    }
-}
-function toggleRed1(num, el) {
-    if (selectedRed1.includes(num)) {
-        selectedRed1 = selectedRed1.filter(n => n !== num);
-        el.classList.remove('selected');
-    } else {
-        if (selectedRed1.length >= 5) { alert('前区最多选5个！'); return; }
-        selectedRed1.push(num);
-        el.classList.add('selected');
-    }
-    updateDisplay1();
-}
-function toggleBlue1(num, el) {
-    if (selectedBlue1.includes(num)) {
-        selectedBlue1 = selectedBlue1.filter(n => n !== num);
-        el.classList.remove('selected');
-    } else {
-        if (selectedBlue1.length >= 2) { alert('后区最多选2个！'); return; }
-        selectedBlue1.push(num);
-        el.classList.add('selected');
-    }
-    updateDisplay1();
-}
-function updateDisplay1() {
-    document.getElementById('red-count1').textContent = selectedRed1.length;
-    document.getElementById('blue-count1').textContent = selectedBlue1.length;
-    const r = [...selectedRed1].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
-    const b = [...selectedBlue1].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
-    document.getElementById('selected-red1').textContent = r ? r + '　' : '';
-    document.getElementById('selected-blue1').textContent = b;
-}
-function randomSelect1() {
-    clearAll1();
-    let pool = Array.from({length:35},(_,i)=>i+1);
-    selectedRed1 = [];
-    for(let i=0;i<5;i++){ let idx=Math.floor(Math.random()*pool.length); selectedRed1.push(pool[idx]); pool.splice(idx,1); }
-    pool = Array.from({length:12},(_,i)=>i+1);
-    selectedBlue1 = [];
-    for(let i=0;i<2;i++){ let idx=Math.floor(Math.random()*pool.length); selectedBlue1.push(pool[idx]); pool.splice(idx,1); }
-    highlight1();
-    updateDisplay1();
-}
-function highlight1() {
-    document.querySelectorAll('#red-grid1 .number').forEach(b=> b.classList.toggle('selected', selectedRed1.includes(+b.dataset.value)));
-    document.querySelectorAll('#blue-grid1 .number').forEach(b=> b.classList.toggle('selected', selectedBlue1.includes(+b.dataset.value)));
-}
-function clearAll1() {
-    selectedRed1=[]; selectedBlue1=[];
-    document.querySelectorAll('#page1 .number').forEach(b=>b.classList.remove('selected'));
-    updateDisplay1();
-}
+function createRedBalls1() { const g=document.getElementById('red-grid1');g.innerHTML='';for(let i=1;i<=35;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number red-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleRed1(i,b);g.appendChild(b);}}
+function createBlueBalls1() { const g=document.getElementById('blue-grid1');g.innerHTML='';for(let i=1;i<=12;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number blue-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleBlue1(i,b);g.appendChild(b);}}
+function toggleRed1(n,e){if(selectedRed1.includes(n)){selectedRed1=selectedRed1.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedRed1.length>=5)return;selectedRed1.push(n);e.classList.add('selected')}updateDisplay1()}
+function toggleBlue1(n,e){if(selectedBlue1.includes(n)){selectedBlue1=selectedBlue1.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedBlue1.length>=2)return;selectedBlue1.push(n);e.classList.add('selected')}updateDisplay1()}
+function updateDisplay1(){document.getElementById('red-count1').textContent=selectedRed1.length;document.getElementById('blue-count1').textContent=selectedBlue1.length;const r=[...selectedRed1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');const b=[...selectedBlue1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');document.getElementById('selected-red1').textContent=r?r+' ':'';document.getElementById('selected-blue1').textContent=b}
+function randomSelect1(){clearAll1();let p=Array.from({length:35},(_,i)=>i+1);selectedRed1=[];for(let i=0;i<5;i++){let idx=Math.floor(Math.random()*p.length);selectedRed1.push(p[idx]);p.splice(idx,1)}p=Array.from({length:12},(_,i)=>i+1);selectedBlue1=[];for(let i=0;i<2;i++){let idx=Math.floor(Math.random()*p.length);selectedBlue1.push(p[idx]);p.splice(idx,1)}highlight1();updateDisplay1()}
+async function predictSelect1(){const b=document.getElementById('predictBtn1');const s=document.getElementById('status1');b.disabled=1;b.textContent='分析中...';s.textContent='加载实时37期热号...';setTimeout(()=>{clearAll1();const p=analyzeAndPredict(dltHistory,!1);selectedRed1=p.red;selectedBlue1=p.blue;highlight1();updateDisplay1();s.textContent=`预测完成！基于实时${dltHistory.length}期数据`;b.disabled=0;b.textContent='📊 分析最近37期预测'},700)}
+function refreshData1(){window.location.reload()}
+function highlight1(){document.querySelectorAll('#red-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedRed1.includes(+x.dataset.value)));document.querySelectorAll('#blue-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedBlue1.includes(+x.dataset.value)))}
+function clearAll1(){selectedRed1=[];selectedBlue1=[];document.querySelectorAll('#page1 .number').forEach(x=>x.classList.remove('selected'));updateDisplay1()}
 
-// 双色球相关代码
-let selectedRed2 = [], selectedBlue2 = [];
-function createRedBalls2() {
-    const grid = document.getElementById('red-grid2'); grid.innerHTML = '';
-    for (let i = 1; i <= 33; i++) {
-        const num = i < 10 ? '0' + i : i;
-        const ball = document.createElement('div');
-        ball.className = 'number red-ball';
-        ball.textContent = num;
-        ball.dataset.value = i;
-        ball.onclick = () => toggleRed2(i, ball);
-        grid.appendChild(ball);
-    }
-}
-function createBlueBalls2() {
-    const grid = document.getElementById('blue-grid2'); grid.innerHTML = '';
-    for (let i = 1; i <= 16; i++) {
-        const num = i < 10 ? '0' + i : i;
-        const ball = document.createElement('div');
-        ball.className = 'number blue-ball';
-        ball.textContent = num;
-        ball.dataset.value = i;
-        ball.onclick = () => toggleBlue2(i, ball);
-        grid.appendChild(ball);
-    }
-}
-function toggleRed2(num, el) {
-    if (selectedRed2.includes(num)) {
-        selectedRed2 = selectedRed2.filter(n => n !== num);
-        el.classList.remove('selected');
-    } else {
-        if (selectedRed2.length >= 6) { alert('前区最多选6个！'); return; }
-        selectedRed2.push(num);
-        el.classList.add('selected');
-    }
-    updateDisplay2();
-}
-function toggleBlue2(num, el) {
-    document.querySelectorAll('#blue-grid2 .number').forEach(b => b.classList.remove('selected'));
-    if (selectedBlue2[0] === num) {
-        selectedBlue2 = [];
-    } else {
-        selectedBlue2 = [num];
-        el.classList.add('selected');
-    }
-    updateDisplay2();
-}
-function updateDisplay2() {
-    document.getElementById('red-count2').textContent = selectedRed2.length;
-    document.getElementById('blue-count2').textContent = selectedBlue2.length;
-    const r = [...selectedRed2].sort((a,b)=>a-b).map(n=>n<10?'0'+n:n).join('  ');
-    const b = selectedBlue2.length ? (selectedBlue2[0]<10?'0'+selectedBlue2[0]:selectedBlue2[0]) : '';
-    document.getElementById('selected-red2').textContent = r ? r + '　' : '';
-    document.getElementById('selected-blue2').textContent = b;
-}
-function randomSelect2() {
-    clearAll2();
-    let pool = Array.from({length:33},(_,i)=>i+1);
-    selectedRed2 = [];
-    for(let i=0;i<6;i++){ let idx=Math.floor(Math.random()*pool.length); selectedRed2.push(pool[idx]); pool.splice(idx,1); }
-    selectedBlue2 = [Math.floor(Math.random()*16)+1];
-    highlight2();
-    updateDisplay2();
-}
-function highlight2() {
-    document.querySelectorAll('#red-grid2 .number').forEach(b=> b.classList.toggle('selected', selectedRed2.includes(+b.dataset.value)));
-    document.querySelectorAll('#blue-grid2 .number').forEach(b=> b.classList.toggle('selected', selectedBlue2.includes(+b.dataset.value)));
-}
-function clearAll2() {
-    selectedRed2=[]; selectedBlue2=[];
-    document.querySelectorAll('#page2 .number').forEach(b=>b.classList.remove('selected'));
-    updateDisplay2();
-}
+let selectedRed2=[],selectedBlue2=[];
+function createRedBalls2(){const g=document.getElementById('red-grid2');g.innerHTML='';for(let i=1;i<=33;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number red-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleRed2(i,b);g.appendChild(b);}}
+function createBlueBalls2(){const g=document.getElementById('blue-grid2');g.innerHTML='';for(let i=1;i<=16;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number blue-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleBlue2(i,b);g.appendChild(b);}}
+function toggleRed2(n,e){if(selectedRed2.includes(n)){selectedRed2=selectedRed2.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedRed2.length>=6)return;selectedRed2.push(n);e.classList.add('selected')}updateDisplay2()}
+function toggleBlue2(n,e){document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.remove('selected'));selectedBlue2=selectedBlue2[0]===n?[]:[n];if(selectedBlue2.length)e.classList.add('selected');updateDisplay2()}
+function updateDisplay2(){document.getElementById('red-count2').textContent=selectedRed2.length;document.getElementById('blue-count2').textContent=selectedBlue2.length;const r=[...selectedRed2].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');const b=selectedBlue2.length?(selectedBlue2[0]<10?'0'+selectedBlue2[0]:selectedBlue2[0]):'';document.getElementById('selected-red2').textContent=r?r+' ':'';document.getElementById('selected-blue2').textContent=b}
+function randomSelect2(){clearAll2();let p=Array.from({length:33},(_,i)=>i+1);selectedRed2=[];for(let i=0;i<6;i++){let idx=Math.floor(Math.random()*p.length);selectedRed2.push(p[idx]);p.splice(idx,1)}selectedBlue2=[Math.floor(Math.random()*16)+1];highlight2();updateDisplay2()}
+async function predictSelect2(){const b=document.getElementById('predictBtn2');const s=document.getElementById('status2');b.disabled=1;b.textContent='分析中...';s.textContent='加载实时37期热号...';setTimeout(()=>{clearAll2();const p=analyzeAndPredict(ssqHistory,!0);selectedRed2=p.red;selectedBlue2=p.blue;highlight2();updateDisplay2();s.textContent=`预测完成！基于实时${ssqHistory.length}期数据`;b.disabled=0;b.textContent='📊 分析最近37期预测'},700)}
+function refreshData2(){window.location.reload()}
+function highlight2(){document.querySelectorAll('#red-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedRed2.includes(+x.dataset.value)));document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedBlue2.includes(+x.dataset.value)))}
+function clearAll2(){selectedRed2=[];selectedBlue2=[];document.querySelectorAll('#page2 .number').forEach(x=>x.classList.remove('selected'));updateDisplay2()}
 
-// Tab 切换
-function switchPage(page) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page'+page).classList.add('active');
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('tab'+page).classList.add('active');
+function switchPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page'+p).classList.add('active');document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab'+p).classList.add('active');const btn=document.getElementById('switchBtn');if(p===1){btn.textContent='切换到双色球 →';btn.onclick=()=>switchPage(2)}else{btn.textContent='切换到大乐透 ←';btn.onclick=()=>switchPage(1)}}
 
-    const btn = document.getElementById('switchBtn');
-    if (page === 1) {
-        btn.textContent = "切换到双色球 →";
-        btn.onclick = () => switchPage(2);
-    } else {
-        btn.textContent = "切换到大乐透 ←";
-        btn.onclick = () => switchPage(1);
-    }
-}
-
-// 初始化
-window.onload = function() {
-    createRedBalls1(); createBlueBalls1(); updateDisplay1();
-    createRedBalls2(); createBlueBalls2(); updateDisplay2();
-};
+function initLottery(){createRedBalls1();createBlueBalls1();updateDisplay1();createRedBalls2();createBlueBalls2();updateDisplay2()}
 </script>
 </body>
 </html>
