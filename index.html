@@ -229,20 +229,42 @@
 <script>
 const correctPassword = "123456";
 
-// 这里是实时从后端获取的最新37期数据！
+// 全局数据存储
 let dltHistory = [];
 let ssqHistory = [];
 
 async function loadRealData() {
     try {
+        // 加载大乐透数据
         let dltRes = await fetch('http://127.0.0.1:8000/api/dlt');
-        dltHistory = await dltRes.json();
-
+        let dltJson = await dltRes.json();
+        dltHistory = dltJson.data || [];
+        console.log('大乐透数据加载成功:', dltHistory.length, '期');
+        
+        // 加载双色球数据
         let ssqRes = await fetch('http://127.0.0.1:8000/api/ssq');
-        ssqHistory = await ssqRes.json();
+        let ssqJson = await ssqRes.json();
+        ssqHistory = ssqJson.data || [];
+        console.log('双色球数据加载成功:', ssqHistory.length, '期');
+        
+        updateStatusMessage('数据加载成功！');
     } catch (e) {
-        alert("获取实时数据失败，请确保Python后端已启动！");
+        console.error("获取数据失败:", e);
+        updateStatusMessage('数据加载失败，使用随机生成');
+        dltHistory = [];
+        ssqHistory = [];
     }
+}
+
+function updateStatusMessage(msg) {
+    const status1 = document.getElementById('status1');
+    const status2 = document.getElementById('status2');
+    if (status1) status1.textContent = msg;
+    if (status2) status2.textContent = msg;
+    setTimeout(() => {
+        if (status1 && status1.textContent === msg) status1.textContent = '';
+        if (status2 && status2.textContent === msg) status2.textContent = '';
+    }, 2000);
 }
 
 function checkPassword() {
@@ -264,6 +286,12 @@ function checkPassword() {
 }
 
 function analyzeAndPredict(history, isSSQ) {
+    // 确保 history 是数组
+    if (!Array.isArray(history) || history.length === 0) {
+        console.log('无历史数据，使用随机生成');
+        return getRandomNumbers(isSSQ);
+    }
+    
     const maxRed = isSSQ ? 33 : 35;
     const maxBlue = isSSQ ? 16 : 12;
     const needRed = isSSQ ? 6 : 5;
@@ -273,9 +301,15 @@ function analyzeAndPredict(history, isSSQ) {
     const blueFreq = new Array(maxBlue + 1).fill(0);
 
     history.forEach(draw => {
-        draw.red.forEach(num => { if (num >= 1 && num <= maxRed) redFreq[num]++; });
+        if (draw.red && Array.isArray(draw.red)) {
+            draw.red.forEach(num => {
+                if (num >= 1 && num <= maxRed) redFreq[num]++;
+            });
+        }
         const blues = Array.isArray(draw.blue) ? draw.blue : [draw.blue];
-        blues.forEach(num => { if (num >= 1 && num <= maxBlue) blueFreq[num]++; });
+        blues.forEach(num => {
+            if (num >= 1 && num <= maxBlue) blueFreq[num]++;
+        });
     });
 
     let redCandidates = Array.from({length: maxRed}, (_, i) => ({num: i+1, freq: redFreq[i+1]}));
@@ -289,33 +323,306 @@ function analyzeAndPredict(history, isSSQ) {
     return { red: predictedRed, blue: predictedBlue };
 }
 
+function getRandomNumbers(isSSQ) {
+    const maxRed = isSSQ ? 33 : 35;
+    const maxBlue = isSSQ ? 16 : 12;
+    const needRed = isSSQ ? 6 : 5;
+    const needBlue = isSSQ ? 1 : 2;
+    
+    let redPool = Array.from({length: maxRed}, (_, i) => i + 1);
+    let selectedRed = [];
+    for (let i = 0; i < needRed; i++) {
+        let idx = Math.floor(Math.random() * redPool.length);
+        selectedRed.push(redPool[idx]);
+        redPool.splice(idx, 1);
+    }
+    selectedRed.sort((a, b) => a - b);
+    
+    let bluePool = Array.from({length: maxBlue}, (_, i) => i + 1);
+    let selectedBlue = [];
+    for (let i = 0; i < needBlue; i++) {
+        let idx = Math.floor(Math.random() * bluePool.length);
+        selectedBlue.push(bluePool[idx]);
+        bluePool.splice(idx, 1);
+    }
+    selectedBlue.sort((a, b) => a - b);
+    
+    return { red: selectedRed, blue: selectedBlue };
+}
+
+// 大乐透相关
 let selectedRed1 = [], selectedBlue1 = [];
-function createRedBalls1() { const g=document.getElementById('red-grid1');g.innerHTML='';for(let i=1;i<=35;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number red-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleRed1(i,b);g.appendChild(b);}}
-function createBlueBalls1() { const g=document.getElementById('blue-grid1');g.innerHTML='';for(let i=1;i<=12;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number blue-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleBlue1(i,b);g.appendChild(b);}}
-function toggleRed1(n,e){if(selectedRed1.includes(n)){selectedRed1=selectedRed1.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedRed1.length>=5)return;selectedRed1.push(n);e.classList.add('selected')}updateDisplay1()}
-function toggleBlue1(n,e){if(selectedBlue1.includes(n)){selectedBlue1=selectedBlue1.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedBlue1.length>=2)return;selectedBlue1.push(n);e.classList.add('selected')}updateDisplay1()}
-function updateDisplay1(){document.getElementById('red-count1').textContent=selectedRed1.length;document.getElementById('blue-count1').textContent=selectedBlue1.length;const r=[...selectedRed1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');const b=[...selectedBlue1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');document.getElementById('selected-red1').textContent=r?r+' ':'';document.getElementById('selected-blue1').textContent=b}
-function randomSelect1(){clearAll1();let p=Array.from({length:35},(_,i)=>i+1);selectedRed1=[];for(let i=0;i<5;i++){let idx=Math.floor(Math.random()*p.length);selectedRed1.push(p[idx]);p.splice(idx,1)}p=Array.from({length:12},(_,i)=>i+1);selectedBlue1=[];for(let i=0;i<2;i++){let idx=Math.floor(Math.random()*p.length);selectedBlue1.push(p[idx]);p.splice(idx,1)}highlight1();updateDisplay1()}
-async function predictSelect1(){const b=document.getElementById('predictBtn1');const s=document.getElementById('status1');b.disabled=1;b.textContent='分析中...';s.textContent='加载实时37期热号...';setTimeout(()=>{clearAll1();const p=analyzeAndPredict(dltHistory,!1);selectedRed1=p.red;selectedBlue1=p.blue;highlight1();updateDisplay1();s.textContent=`预测完成！基于实时${dltHistory.length}期数据`;b.disabled=0;b.textContent='📊 分析最近37期预测'},700)}
-function refreshData1(){window.location.reload()}
-function highlight1(){document.querySelectorAll('#red-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedRed1.includes(+x.dataset.value)));document.querySelectorAll('#blue-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedBlue1.includes(+x.dataset.value)))}
-function clearAll1(){selectedRed1=[];selectedBlue1=[];document.querySelectorAll('#page1 .number').forEach(x=>x.classList.remove('selected'));updateDisplay1()}
 
-let selectedRed2=[],selectedBlue2=[];
-function createRedBalls2(){const g=document.getElementById('red-grid2');g.innerHTML='';for(let i=1;i<=33;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number red-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleRed2(i,b);g.appendChild(b);}}
-function createBlueBalls2(){const g=document.getElementById('blue-grid2');g.innerHTML='';for(let i=1;i<=16;i++){const n=i<10?'0'+i:i;const b=document.createElement('div');b.className='number blue-ball';b.textContent=n;b.dataset.value=i;b.onclick=()=>toggleBlue2(i,b);g.appendChild(b);}}
-function toggleRed2(n,e){if(selectedRed2.includes(n)){selectedRed2=selectedRed2.filter(x=>x!=n);e.classList.remove('selected')}else{if(selectedRed2.length>=6)return;selectedRed2.push(n);e.classList.add('selected')}updateDisplay2()}
-function toggleBlue2(n,e){document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.remove('selected'));selectedBlue2=selectedBlue2[0]===n?[]:[n];if(selectedBlue2.length)e.classList.add('selected');updateDisplay2()}
-function updateDisplay2(){document.getElementById('red-count2').textContent=selectedRed2.length;document.getElementById('blue-count2').textContent=selectedBlue2.length;const r=[...selectedRed2].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');const b=selectedBlue2.length?(selectedBlue2[0]<10?'0'+selectedBlue2[0]:selectedBlue2[0]):'';document.getElementById('selected-red2').textContent=r?r+' ':'';document.getElementById('selected-blue2').textContent=b}
-function randomSelect2(){clearAll2();let p=Array.from({length:33},(_,i)=>i+1);selectedRed2=[];for(let i=0;i<6;i++){let idx=Math.floor(Math.random()*p.length);selectedRed2.push(p[idx]);p.splice(idx,1)}selectedBlue2=[Math.floor(Math.random()*16)+1];highlight2();updateDisplay2()}
-async function predictSelect2(){const b=document.getElementById('predictBtn2');const s=document.getElementById('status2');b.disabled=1;b.textContent='分析中...';s.textContent='加载实时37期热号...';setTimeout(()=>{clearAll2();const p=analyzeAndPredict(ssqHistory,!0);selectedRed2=p.red;selectedBlue2=p.blue;highlight2();updateDisplay2();s.textContent=`预测完成！基于实时${ssqHistory.length}期数据`;b.disabled=0;b.textContent='📊 分析最近37期预测'},700)}
-function refreshData2(){window.location.reload()}
-function highlight2(){document.querySelectorAll('#red-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedRed2.includes(+x.dataset.value)));document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedBlue2.includes(+x.dataset.value)))}
-function clearAll2(){selectedRed2=[];selectedBlue2=[];document.querySelectorAll('#page2 .number').forEach(x=>x.classList.remove('selected'));updateDisplay2()}
+function createRedBalls1() { 
+    const g=document.getElementById('red-grid1');
+    g.innerHTML='';
+    for(let i=1;i<=35;i++){
+        const n=i<10?'0'+i:i;
+        const b=document.createElement('div');
+        b.className='number red-ball';
+        b.textContent=n;
+        b.dataset.value=i;
+        b.onclick=()=>toggleRed1(i,b);
+        g.appendChild(b);
+    }
+}
 
-function switchPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById('page'+p).classList.add('active');document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.getElementById('tab'+p).classList.add('active');const btn=document.getElementById('switchBtn');if(p===1){btn.textContent='切换到双色球 →';btn.onclick=()=>switchPage(2)}else{btn.textContent='切换到大乐透 ←';btn.onclick=()=>switchPage(1)}}
+function createBlueBalls1() { 
+    const g=document.getElementById('blue-grid1');
+    g.innerHTML='';
+    for(let i=1;i<=12;i++){
+        const n=i<10?'0'+i:i;
+        const b=document.createElement('div');
+        b.className='number blue-ball';
+        b.textContent=n;
+        b.dataset.value=i;
+        b.onclick=()=>toggleBlue1(i,b);
+        g.appendChild(b);
+    }
+}
 
-function initLottery(){createRedBalls1();createBlueBalls1();updateDisplay1();createRedBalls2();createBlueBalls2();updateDisplay2()}
+function toggleRed1(n,e){
+    if(selectedRed1.includes(n)){
+        selectedRed1=selectedRed1.filter(x=>x!=n);
+        e.classList.remove('selected');
+    }else{
+        if(selectedRed1.length>=5){
+            document.getElementById('status1').textContent='前区最多选5个';
+            return;
+        }
+        selectedRed1.push(n);
+        e.classList.add('selected');
+    }
+    updateDisplay1();
+}
+
+function toggleBlue1(n,e){
+    if(selectedBlue1.includes(n)){
+        selectedBlue1=selectedBlue1.filter(x=>x!=n);
+        e.classList.remove('selected');
+    }else{
+        if(selectedBlue1.length>=2){
+            document.getElementById('status1').textContent='后区最多选2个';
+            return;
+        }
+        selectedBlue1.push(n);
+        e.classList.add('selected');
+    }
+    updateDisplay1();
+}
+
+function updateDisplay1(){
+    document.getElementById('red-count1').textContent=selectedRed1.length;
+    document.getElementById('blue-count1').textContent=selectedBlue1.length;
+    const r=[...selectedRed1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');
+    const b=[...selectedBlue1].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');
+    document.getElementById('selected-red1').textContent=r?r+' ':'';
+    document.getElementById('selected-blue1').textContent=b;
+}
+
+function highlight1(){
+    document.querySelectorAll('#red-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedRed1.includes(+x.dataset.value)));
+    document.querySelectorAll('#blue-grid1 .number').forEach(x=>x.classList.toggle('selected',selectedBlue1.includes(+x.dataset.value)));
+}
+
+function randomSelect1(){
+    clearAll1();
+    let p=Array.from({length:35},(_,i)=>i+1);
+    selectedRed1=[];
+    for(let i=0;i<5;i++){
+        let idx=Math.floor(Math.random()*p.length);
+        selectedRed1.push(p[idx]);
+        p.splice(idx,1);
+    }
+    p=Array.from({length:12},(_,i)=>i+1);
+    selectedBlue1=[];
+    for(let i=0;i<2;i++){
+        let idx=Math.floor(Math.random()*p.length);
+        selectedBlue1.push(p[idx]);
+        p.splice(idx,1);
+    }
+    highlight1();
+    updateDisplay1();
+}
+
+async function predictSelect1(){
+    const btn=document.getElementById('predictBtn1');
+    const s=document.getElementById('status1');
+    btn.disabled=true;
+    btn.textContent='分析中...';
+    s.textContent='分析历史数据...';
+    
+    await new Promise(r=>setTimeout(r,50));
+    
+    clearAll1();
+    const p=analyzeAndPredict(dltHistory,false);
+    selectedRed1=p.red;
+    selectedBlue1=p.blue;
+    highlight1();
+    updateDisplay1();
+    
+    s.textContent=`预测完成！基于${dltHistory.length}期数据`;
+    btn.disabled=false;
+    btn.textContent='📊 分析最近37期预测';
+    setTimeout(()=>{if(s.textContent.includes('预测完成')) s.textContent='';},2500);
+}
+
+async function refreshData1(){
+    const s=document.getElementById('status1');
+    s.textContent='刷新数据中...';
+    await loadRealData();
+    s.textContent=`刷新成功！大乐透${dltHistory.length}期`;
+    setTimeout(()=>{if(s.textContent.includes('刷新成功')) s.textContent='';},2000);
+}
+
+function clearAll1(){
+    selectedRed1=[];
+    selectedBlue1=[];
+    document.querySelectorAll('#page1 .number').forEach(x=>x.classList.remove('selected'));
+    updateDisplay1();
+}
+
+// 双色球相关
+let selectedRed2=[], selectedBlue2=[];
+
+function createRedBalls2(){
+    const g=document.getElementById('red-grid2');
+    g.innerHTML='';
+    for(let i=1;i<=33;i++){
+        const n=i<10?'0'+i:i;
+        const b=document.createElement('div');
+        b.className='number red-ball';
+        b.textContent=n;
+        b.dataset.value=i;
+        b.onclick=()=>toggleRed2(i,b);
+        g.appendChild(b);
+    }
+}
+
+function createBlueBalls2(){
+    const g=document.getElementById('blue-grid2');
+    g.innerHTML='';
+    for(let i=1;i<=16;i++){
+        const n=i<10?'0'+i:i;
+        const b=document.createElement('div');
+        b.className='number blue-ball';
+        b.textContent=n;
+        b.dataset.value=i;
+        b.onclick=()=>toggleBlue2(i,b);
+        g.appendChild(b);
+    }
+}
+
+function toggleRed2(n,e){
+    if(selectedRed2.includes(n)){
+        selectedRed2=selectedRed2.filter(x=>x!=n);
+        e.classList.remove('selected');
+    }else{
+        if(selectedRed2.length>=6){
+            document.getElementById('status2').textContent='前区最多选6个';
+            return;
+        }
+        selectedRed2.push(n);
+        e.classList.add('selected');
+    }
+    updateDisplay2();
+}
+
+function toggleBlue2(n,e){
+    document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.remove('selected'));
+    selectedBlue2=selectedBlue2[0]===n?[]:[n];
+    if(selectedBlue2.length) e.classList.add('selected');
+    updateDisplay2();
+}
+
+function updateDisplay2(){
+    document.getElementById('red-count2').textContent=selectedRed2.length;
+    document.getElementById('blue-count2').textContent=selectedBlue2.length;
+    const r=[...selectedRed2].sort((a,b)=>a-b).map(x=>x<10?'0'+x:x).join('  ');
+    const b=selectedBlue2.length?(selectedBlue2[0]<10?'0'+selectedBlue2[0]:selectedBlue2[0]):'';
+    document.getElementById('selected-red2').textContent=r?r+' ':'';
+    document.getElementById('selected-blue2').textContent=b;
+}
+
+function highlight2(){
+    document.querySelectorAll('#red-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedRed2.includes(+x.dataset.value)));
+    document.querySelectorAll('#blue-grid2 .number').forEach(x=>x.classList.toggle('selected',selectedBlue2.includes(+x.dataset.value)));
+}
+
+function randomSelect2(){
+    clearAll2();
+    let p=Array.from({length:33},(_,i)=>i+1);
+    selectedRed2=[];
+    for(let i=0;i<6;i++){
+        let idx=Math.floor(Math.random()*p.length);
+        selectedRed2.push(p[idx]);
+        p.splice(idx,1);
+    }
+    selectedBlue2=[Math.floor(Math.random()*16)+1];
+    highlight2();
+    updateDisplay2();
+}
+
+async function predictSelect2(){
+    const btn=document.getElementById('predictBtn2');
+    const s=document.getElementById('status2');
+    btn.disabled=true;
+    btn.textContent='分析中...';
+    s.textContent='分析历史数据...';
+    
+    await new Promise(r=>setTimeout(r,50));
+    
+    clearAll2();
+    const p=analyzeAndPredict(ssqHistory,true);
+    selectedRed2=p.red;
+    selectedBlue2=p.blue;
+    highlight2();
+    updateDisplay2();
+    
+    s.textContent=`预测完成！基于${ssqHistory.length}期数据`;
+    btn.disabled=false;
+    btn.textContent='📊 分析最近37期预测';
+    setTimeout(()=>{if(s.textContent.includes('预测完成')) s.textContent='';},2500);
+}
+
+async function refreshData2(){
+    const s=document.getElementById('status2');
+    s.textContent='刷新数据中...';
+    await loadRealData();
+    s.textContent=`刷新成功！双色球${ssqHistory.length}期`;
+    setTimeout(()=>{if(s.textContent.includes('刷新成功')) s.textContent='';},2000);
+}
+
+function clearAll2(){
+    selectedRed2=[];
+    selectedBlue2=[];
+    document.querySelectorAll('#page2 .number').forEach(x=>x.classList.remove('selected'));
+    updateDisplay2();
+}
+
+function switchPage(p){
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    document.getElementById('page'+p).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.getElementById('tab'+p).classList.add('active');
+    const btn=document.getElementById('switchBtn');
+    if(p===1){
+        btn.textContent='切换到双色球 →';
+        btn.onclick=()=>switchPage(2);
+    }else{
+        btn.textContent='切换到大乐透 ←';
+        btn.onclick=()=>switchPage(1);
+    }
+}
+
+function initLottery(){
+    createRedBalls1();
+    createBlueBalls1();
+    updateDisplay1();
+    createRedBalls2();
+    createBlueBalls2();
+    updateDisplay2();
+}
 </script>
 </body>
 </html>
